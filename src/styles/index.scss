@@ -90,3 +90,28 @@ canvas {
    }
   }
 }
+
+
+
+form{
+
+
+  input{
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #fff;
+  }
+
+  button{
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #000;
+    background-color: #fff;
+    //prevent selection by clickling
+    user-select: none;
+  }
+}

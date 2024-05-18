@@ -2,17 +2,7 @@
 @binding(1) @group(0) var<uniform> viewportOrigin : vec2 < f32>;
 @binding(2) @group(0) var<uniform> viewScale : f32;
 @binding(3) @group(0) var<uniform> maxIteration : i32;
-@binding(4) @group(0) var<uniform> unit_delta : vec2< f32>;
-struct PaddedVec2 {
-    value : vec2 < f32>,
-    _padding : vec2 < f32>,
-};
-
-
-
-@binding(5) @group(0) var<uniform> x_n : array<PaddedVec2, 100>;
-@binding(6) @group(0) var<uniform> reference_orbit : vec2 < f32>;
-
+@binding(4) @group(0) var<storage> x_n : array<vec2 < f32>, 100>;
 
 @vertex
 fn vs_main(@location(0) inPos : vec2 < f32>) -> @builtin(position) vec4 < f32> {
@@ -30,7 +20,7 @@ fn main(@builtin(position) FragCoord : vec4 < f32>) -> @location(0) vec4 < f32> 
     var starty : f32 = -2.5;
     var endy : f32 = 2.5;
 
-     ///aspect ration stuff
+    ///aspect ration stuff
     if(aspectRatio > 1.0)
     {
         let range : f32 = (endx - startx) * aspectRatio;
@@ -43,8 +33,6 @@ fn main(@builtin(position) FragCoord : vec4 < f32>) -> @location(0) vec4 < f32> 
         endy = range / 2.0;
     }
 
-
-
     startx = (startx * viewScale) + viewportOrigin.x;
     endx = (endx * viewScale) + viewportOrigin.x;
     starty = (starty * viewScale) + viewportOrigin.y;
@@ -53,77 +41,47 @@ fn main(@builtin(position) FragCoord : vec4 < f32>) -> @location(0) vec4 < f32> 
     //Get the current pixel's coordinates in the complex plane
     let scale : vec2 < f32> = vec2 < f32 > (endx - startx, endy - starty) / viewportSize;
     let c : vec2 < f32> = vec2 < f32 > (startx, starty) + vec2 < f32 > (FragCoord.x, viewportSize.y - FragCoord.y) * scale;
-    let delta_0: vec2< f32> = vec2< f32> (FragCoord.x * unit_delta.x, FragCoord.y * unit_delta.y);
-    //let delta_0 = c;
+    let delta_z = vec2 < f32 > (0.0, 0.0);
+
+    //we always use center as reference point
 
 
+    //Initialize the iteration variables
+    var z : vec2 < f32> = c;
+    var iteration : i32 = 0;
+    let bailout : f32 = 4.0;
+    var lastZ : vec2 < f32> = z;
+    //var expiter: f32 = 0.0;
 
-
-
-    var delta_z : vec2 < f32> = vec2 < f32 > (0.0, 0.0);
-    var two = vec2 < f32 > (2.0, 0.0);
-    var ref_iteration = 0;
-    var iteration = 0;
-    var z =c;
-    var lastZ = x_n[0].value + delta_0;
-    var max_sub_iter = 98;
-
-    while(iteration < maxIteration)
+    //Perform the Mandelbrot iteration
+    while (iteration < maxIteration && dot(z, z) < bailout)
     {
-        //lastZ = z;
-        //delta_z = (two * delta_z * x_n[ref_iteration].value) + (delta_z * delta_z) + delta_0;
-        //ref_iteration += 1;
-        //z = x_n[ref_iteration].value + delta_z;
-        //if(sqrt(dot(z,z)) > 2.0){
-        //break;
-        //}
-        //if(
-        //sqrt(dot(z,z)) < sqrt(dot(delta_z, delta_z))
-        //||
-        //ref_iteration == max_sub_iter){
-        //delta_z = z;
-        //ref_iteration = 0;
-        //}
-        //iteration += 1;
         lastZ = z;
-
-        //lculate delta_z component-wise
-        let delta_z_x = (2.0 * delta_z.x * x_n[ref_iteration].value.x) + (delta_z.x * delta_z.x) - (delta_z.y * delta_z.y) + delta_0.x;
-        let delta_z_y = (2.0 * delta_z.y * x_n[ref_iteration].value.y) + (2.0 * delta_z.x * delta_z.y) + delta_0.y;
-        delta_z = vec2(delta_z_x, delta_z_y);
-
-        ref_iteration += 1;
-
-        //lculate z component-wise
-        let z_x = x_n[ref_iteration].value.x + delta_z.x;
-        let z_y = x_n[ref_iteration].value.y + delta_z.y;
-        z = vec2(z_x, z_y);
-
-        //eck if magnitude of z exceeds 2.0
-        if (
-            dot(z, z) > 4.0
-        )
-        {
-            break;
-        }
-
-        //eck if magnitude of z is less than magnitude of delta_z or max_sub_iter reached
-        if ((z.x * z.x + z.y * z.y) < (delta_z.x * delta_z.x + delta_z.y * delta_z.y) || ref_iteration == max_sub_iter)
-        {
-            delta_z = z;
-            ref_iteration = 0;
-        }
-
-        iteration += 1;
-
+        z = vec2 < f32 > (
+        z.x * z.x - z.y * z.y + c.x,
+        (z.x + z.x) * z.y + c.y
+        );
+        //expiter = expiter + exp(-length(z) - 0.5 / length(z - lastZ));
+        iteration = iteration + 1;
     }
 
 
 
+
+
+
+
+    let dotprod = dot(z, z);
+    let modulus = sqrt(dotprod);
+    let precal = -0.52139022765;
+    let inverserlog2 = 3.32192809489;
+    let p = log(dotprod) / log(dot(lastZ, lastZ));
     var mu : f32;
-    if(iteration < i32(maxIteration))
+    if(modulus > 1 && iteration < i32(maxIteration))
     {
-        mu = f32(iteration);
+        let inverserlog2 = 3.32192809489;
+        mu = (f32(iteration)) - (log(0.5 * dotprod) - precal) / p;
+        //mu = f32(iteration) - (log(log(modulus))) * inverserlog2;
     }else{
         mu = f32(maxIteration);
     }
@@ -136,9 +94,14 @@ fn main(@builtin(position) FragCoord : vec4 < f32>) -> @location(0) vec4 < f32> 
 
 
     let hue : f32 = mix(0.0, 1.0, mu / f32(maxIteration));
+    //shift the hue to make the colors more interesting
     let saturation : f32 = 1.0;
     let lightness : f32 = 0.5;
     let color : vec3 < f32> = hslToRgb(hue, saturation, lightness);
+    //Determine the color based on the number of iterations
+
+
+    //Output the color with full opacity
     return vec4 < f32 > (color, 1.0);
 }
 

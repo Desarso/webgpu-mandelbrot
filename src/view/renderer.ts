@@ -19,9 +19,12 @@ export class Renderer {
 
   // Pipeline objects
   viewportSizeBuffer: GPUBuffer;
-  viewportOriginBuffer: GPUBuffer;
+  viewPortOriginBuffer: GPUBuffer;
   viewportScaleBuffer: GPUBuffer;
   iterationsBuffer: GPUBuffer;
+  x_series_buffer: GPUBuffer;
+  unit_delta_buffer: GPUBuffer;
+  reference_orbit_buffer: GPUBuffer;
 
 
   bindGroup: GPUBindGroup;
@@ -70,7 +73,7 @@ export class Renderer {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.viewportOriginBuffer = this.device.createBuffer({
+    this.viewPortOriginBuffer = this.device.createBuffer({
       size: 8,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
@@ -84,6 +87,25 @@ export class Renderer {
       size: 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
+    this.unit_delta_buffer = this.device.createBuffer({
+      size: 8,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+
+    this.x_series_buffer = this.device.createBuffer({
+      size: 16 * 100,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.reference_orbit_buffer = this.device.createBuffer({
+      size: 8,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    
+
+ 
 
 
 
@@ -117,6 +139,27 @@ export class Renderer {
             type: "uniform",
           },
         },
+        {
+          binding: 4, // matches @binding(4) in the shader
+          visibility: GPUShaderStage.FRAGMENT, // used in the fragment shader
+          buffer: {
+            type: "uniform",
+          },
+        },
+        {
+          binding: 5, // matches @binding(5) in the shader
+          visibility: GPUShaderStage.FRAGMENT, // used in the fragment shader
+          buffer: {
+            type: "uniform",
+          },
+        },
+        {
+          binding: 6, // matches @binding(6) in the shader
+          visibility: GPUShaderStage.FRAGMENT, // used in the fragment shader
+          buffer: {
+            type: "uniform",
+          },
+        }
       ],
     });
 
@@ -133,7 +176,7 @@ export class Renderer {
         {
           binding: 1, // binding number in the bind group layout
           resource: {
-            buffer: this.viewportOriginBuffer,
+            buffer: this.viewPortOriginBuffer,
           },
         },
         {
@@ -148,6 +191,24 @@ export class Renderer {
             buffer: this.iterationsBuffer,
           },
         }, 
+        {
+          binding: 4, // binding number in the bind group layout
+          resource: {
+            buffer: this.unit_delta_buffer,
+          },
+        },
+        {
+          binding: 5, // binding number in the bind group layout
+          resource: {
+            buffer: this.x_series_buffer,
+          },
+        },
+        {
+          binding: 6, // binding number in the bind group layout
+          resource: {
+            buffer: this.reference_orbit_buffer,
+          },
+        }
       ],
     });
 
@@ -210,6 +271,9 @@ export class Renderer {
     // Set the pipeline and bind group for rendering
     renderpass.setPipeline(this.pipeline);
     renderpass.setBindGroup(0, this.bindGroup);
+
+
+
 
     this.device.queue.writeBuffer(
       this.viewportSizeBuffer,

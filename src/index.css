@@ -76,4 +76,21 @@ canvas {
 .container .copyCoords:hover {
   cursor: pointer;
   background-color: wheat;
+}
+
+form input {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+  border-radius: 5px;
+  background-color: #fff;
+}
+form button {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #000;
+  background-color: #fff;
+  user-select: none;
 }/*# sourceMappingURL=index.css.map */
